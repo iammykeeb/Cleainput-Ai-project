@@ -572,21 +572,25 @@
     }
 
     function formatBackendResult(data) {
-      if (data.type === "chat") {
-        var out = data.reply || "";
-        if (data.sources && data.sources.length) {
-          out += "\n\n**Sources:**\n";
-          data.sources.forEach(function(s) {
-            out += "- [" + s.title + "](" + s.url + ")\n";
-          });
-        }
-        return out;
-      } else if (data.type === "classification") {
-        return "(detected as: " + data.intent + (data.pattern ? ", pattern: " + data.pattern : "") + ")";
-      } else {
-        return "Error: " + (data.error || "Something went wrong.");
-      }
+  if (data.type === "chat") {
+    var out = data.reply || "";
+    if (data.sources && data.sources.length) {
+      out += "\n\n**Sources:**\n";
+      data.sources.forEach(function(s) {
+        out += "- [" + s.title + "](" + s.url + ")\n";
+      });
     }
+    return out;
+  } else if (data.type === "classification") {
+    return "(detected as: " + data.intent + (data.pattern ? ", pattern: " + data.pattern : "") + ")";
+  } else {
+    var errMsg = data.error;
+    if (errMsg && typeof errMsg === "object") {
+      errMsg = JSON.stringify(errMsg);
+    }
+    return "Error: " + (errMsg || JSON.stringify(data));
+  }
+}
 
     function fetchCleainputReply(message) {
   return fetch("/api/chat", {
