@@ -602,8 +602,8 @@
       <button class="btn-plus" aria-label="Attach">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="#555" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="#555" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
-      <button class="btn-send" aria-label="Send">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 20V4M12 4L6 10M12 4L18 10" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <button class="btn-send" id="btn-send" aria-label="Send">
+        <svg id="send-icon" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 20V4M12 4L6 10M12 4L18 10" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </div>
   </div>
@@ -865,6 +865,17 @@
     }
 
     // ══════════════════════════════
+    // SEND BUTTON ICON SWAP
+    // ══════════════════════════════
+    var ICON_ARROW = '<path d="M12 20V4M12 4L6 10M12 4L18 10" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+    var ICON_STOP  = '<rect x="6" y="6" width="12" height="12" rx="2.5" fill="white"/>';
+
+    function setSendIcon(state) {
+      var icon = document.getElementById('send-icon');
+      icon.innerHTML = state === 'stop' ? ICON_STOP : ICON_ARROW;
+    }
+
+    // ══════════════════════════════
     // THINKING ANIMATION
     // ══════════════════════════════
     var label = document.getElementById('ai-label');
@@ -882,6 +893,7 @@
     function showExecuted() {
       label.innerHTML = 'Executed';
       label.className = 'ai-label';
+      setSendIcon('arrow'); // restore arrow when done
       setTimeout(function() {
         var rawText = aiText.dataset.raw || aiText.textContent;
         renderAIResponse(rawText);
@@ -895,6 +907,8 @@
     aiText.style.display = 'none';
     aiActions.style.display = 'none';
 
+    // Show stop icon while AI is answering on page load
+    setSendIcon('stop');
     setLabel('', 'Cleainput is Reading');
     setTimeout(function() {
       setLabel('', 'Cleainput is Understanding');
@@ -945,6 +959,7 @@
       aiActions.style.display = 'none';
       aiActions.classList.remove('visible');
 
+      setSendIcon('stop');
       setLabel('', 'Cleainput is Reading');
       setTimeout(function() {
         setLabel('', 'Cleainput is Understanding');
@@ -952,6 +967,7 @@
           aiText.dataset.raw = 'This is just testing';
           label.innerHTML = 'Executed';
           label.className = 'ai-label';
+          setSendIcon('arrow');
           setTimeout(function() {
             renderAIResponse('This is just testing');
             aiText.style.display = '';
@@ -1081,4 +1097,5 @@
   </script>
 </body>
 </html>
+
 
