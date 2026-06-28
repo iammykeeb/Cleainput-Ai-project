@@ -2,7 +2,9 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
-    if (!env.HF_SPACE_URL) {
+    const hfSpaceUrl = (env.HF_SPACE_URL || "").trim();
+
+    if (!hfSpaceUrl) {
       return new Response(JSON.stringify({ error: "HF_SPACE_URL is not set in Cloudflare" }), { status: 500 });
     }
 
@@ -13,11 +15,11 @@ export async function onRequestPost(context) {
       return new Response(JSON.stringify({ error: "invalid JSON" }), { status: 400 });
     }
 
-    const hfResponse = await fetch(`${env.HF_SPACE_URL}/api/chat`, {
+    const hfResponse = await fetch(`${hfSpaceUrl}/api/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-shared-secret": env.SHARED_SECRET || "",
+        "x-shared-secret": (env.SHARED_SECRET || "").trim(),
       },
       body: JSON.stringify(body),
     });
