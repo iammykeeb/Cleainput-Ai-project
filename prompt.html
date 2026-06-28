@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cleainput Ai</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; overflow: hidden; }
+
+    body {
+      height: 100vh;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+    }
+    .sidebar-overlay.open { display: block; }
+
+    .sidebar-backdrop {
+      position: absolute;
+      inset: 0;
+      background: transparent;
+    }
+
+    .sidebar {
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 78%;
+      max-width: 320px;
+      background: #f7f7f8;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(.4,0,.2,1);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.10);
+    }
+    .sidebar-overlay.open .sidebar { transform: translateX(0); }
+
+    .sidebar-header {
+      padding: 18px 16px 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .sidebar-logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #111;
+      letter-spacing: -0.3px;
+    }
+
+    .sidebar-new-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: none;
+      border-radius: 24px;
+      padding: 10px 18px;
+      font-size: 15px;
+      font-weight: 500;
+      color: #222;
+      cursor: pointer;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.10);
+      margin: 10px 16px 14px 16px;
+      width: calc(100% - 32px);
+      justify-content: center;
+    }
+    .sidebar-new-btn:active { background: #f0f0f0; }
+
+    .sidebar-section-label {
+      font-size: 12px;
+      color: #aaa;
+      font-weight: 500;
+      padding: 6px 16px 4px 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .sidebar-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 8px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      position: relative;
+    }
+    .sidebar-item:active { background: #ebebeb; }
+    .sidebar-item.active { background: #e8f0fe; }
+
+    .sidebar-item-text {
+      font-size: 14.5px;
+      color: #111;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sidebar-item.active .sidebar-item-text { color: #4a8cff; }
+
+    .sidebar-item-menu {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      color: #aaa;
+      display: flex;
+      align-items: center;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+    .sidebar-item-menu:active { background: #ddd; }
+
+    /* Dropdown menu */
+    .item-dropdown {
+      display: none;
+      position: fixed;
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+      z-index: 200;
+      min-width: 160px;
+      padding: 6px 0;
+      overflow: hidden;
+    }
+    .item-dropdown.open { display: block; }
+
+    .item-dropdown button {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      background: none;
+      border: none;
+      padding: 13px 18px;
+      font-size: 15px;
+      color: #111;
+      cursor: pointer;
+      text-align: left;
+    }
+    .item-dropdown button:active { background: #f5f5f5; }
+    .item-dropdown button.danger { color: #e53935; }
+
+    .sidebar-footer {
+      padding: 14px 16px;
+      border-top: 1px solid #ebebeb;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .sidebar-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #4a8cff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .sidebar-username {
+      font-size: 14px;
+      font-weight: 500;
+      color: #111;
+    }
+
+    /* Rename modal */
+    .rename-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+    }
+    .rename-modal-overlay.open { display: flex; }
+    .rename-modal {
+      background: #fff;
+      border-radius: 16px;
+      padding: 22px 20px 16px 20px;
+      width: 86%;
+      max-width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+    .rename-modal h3 { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+    .rename-modal input {
+      width: 100%;
+      border: 1.5px solid #4a8cff;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 15px;
+      outline: none;
+      color: #111;
+      font-family: inherit;
+      margin-bottom: 14px;
+    }
+    .rename-modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .rename-modal-actions button {
+      border: none; border-radius: 20px; padding: 8px 20px;
+      font-size: 14px; font-weight: 500; cursor: pointer;
+    }
+    .rename-cancel { background: #f0f0f0; color: #333; }
+    .rename-save { background: #4a8cff; color: #fff; }
+
+    /* ── CHAT BAR ── */
+    .chat-bar-wrapper {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      width: 100%;
+      padding: 12px 16px 20px 16px;
+      background: #ffffff;
+      z-index: 5;
+    }
+
+    /* AI response */
+    .ai-response { width: 100%; margin-top: 20px; }
+
+    .ai-label {
+      font-size: 13px; color: #aaa; margin-bottom: 6px;
+      display: flex; align-items: center; gap: 6px; transition: opacity 0.4s;
+    }
+    .ai-label .state-icon { font-size: 15px; display: inline-block; }
+    .ai-label .dot-wave { display: inline-flex; gap: 3px; align-items: center; }
+    .ai-label .dot-wave span {
+      width: 4px; height: 4px; border-radius: 50%;
+      background: #aaa; display: inline-block; animation: none; opacity: 0.3;
+    }
+
+    @keyframes dotBounce {
+      0%, 80%, 100% { transform: translateY(0); opacity: 0.3; }
+      40% { transform: translateY(-4px); opacity: 1; }
+    }
+    .ai-label.active .dot-wave span:nth-child(1) { animation: dotBounce 1s ease-in-out infinite 0s; }
+    .ai-label.active .dot-wave span:nth-child(2) { animation: dotBounce 1s ease-in-out infinite 0.2s; }
+    .ai-label.active .dot-wave span:nth-child(3) { animation: dotBounce 1s ease-in-out infinite 0.4s; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .ai-text.visible { animation: fadeSlideIn 0.5s ease forwards; }
+    .ai-actions.visible { animation: fadeSlideIn 0.4s ease 0.2s forwards; opacity: 0; }
+
+    .ai-text { font-size: 15px; color: #222; line-height: 1.6; }
+
+    .ai-actions { display: none; align-items: center; gap: 14px; margin-top: 10px; }
+    .ai-actions button {
+      background: none; border: none; cursor: pointer; padding: 4px;
+      display: flex; align-items: center; justify-content: center; transition: opacity 0.15s;
+    }
+    .ai-actions button:hover { opacity: 0.6; }
+
+    /* Message area */
+    .message-area {
+      flex: 1;
+      padding: 70px 16px 160px 16px;
+      display: flex; flex-direction: column; align-items: flex-end;
+      overflow-y: auto;
+    }
+
+    .message-bubble {
+      background: #ffffff; color: #111; border-radius: 18px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.10); padding: 10px 16px;
+      font-size: 15px; white-space: nowrap; display: inline-block; line-height: 1.5;
+    }
+
+    .message-actions {
+      display: flex; align-items: center; gap: 10px; margin-top: 6px; padding-right: 4px;
+    }
+    .message-actions button {
+      background: none; border: none; cursor: pointer; padding: 4px; color: #999;
+      display: flex; align-items: center; justify-content: center; transition: color 0.15s;
+    }
+    .message-actions button:hover { color: #555; }
+
+    /* Version counter */
+    .version-counter {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      color: #bbb;
+      font-size: 13px;
+      user-select: none;
+    }
+    .version-counter .v-nav {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 4px;
+      color: #bbb;
+      font-size: 15px;
+      line-height: 1;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s;
+    }
+    .version-counter .v-nav:hover { color: #888; }
+    .version-counter .v-nav:disabled { opacity: 0.3; cursor: default; }
+    .version-counter .v-label {
+      font-size: 13px;
+      color: #bbb;
+      min-width: 28px;
+      text-align: center;
+    }
+
+    /* Header */
+    .header {
+      position: fixed; top: 0; left: 0; right: 0; height: 56px;
+      background: #ffffff; display: flex; align-items: center; padding: 0 16px; z-index: 10;
+    }
+    .btn-hamburger {
+      width: 40px; height: 40px; border-radius: 50%; background: transparent; border: none;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s;
+    }
+    .btn-hamburger:hover { background: #e5e5e5; }
+
+    /* Input pill */
+    .input-pill {
+      background: #ffffff; border-radius: 28px; padding: 14px 18px; margin-bottom: 14px;
+      display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 6px rgba(0,0,0,0.10);
+    }
+    .input-pill [contenteditable] {
+      flex: 1; border: none; background: transparent; font-size: 15.5px; color: #111;
+      outline: none; caret-color: #4a8cff; word-break: break-word; white-space: pre-wrap;
+      max-height: 140px; overflow-y: auto; line-height: 1.5;
+    }
+    .input-pill [contenteditable]:empty::before {
+      content: attr(data-placeholder); color: #a0a0a0; pointer-events: none; display: block;
+    }
+
+    /* Toolbar */
+    .toolbar { display: flex; align-items: center; gap: 8px; }
+    .chip {
+      display: flex; align-items: center; gap: 6px; background: #ffffff;
+      border: 1.5px solid #4a8cff; border-radius: 20px; padding: 7px 14px;
+      font-size: 13.5px; font-weight: 500; color: #4a8cff; cursor: pointer;
+      transition: background 0.15s; white-space: nowrap; flex-shrink: 0;
+    }
+    .chip:hover { background: #f0f5ff; }
+    .chip:active { background: #e0ecff; }
+    .chip svg { flex-shrink: 0; }
+    .spacer { flex: 1; }
+
+    .btn-plus {
+      width: 36px; height: 36px; border-radius: 50%; background: transparent; border: none;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; color: #555; transition: background 0.15s;
+    }
+    .btn-plus:hover { background: #e5e5e5; }
+
+    .btn-send {
+      width: 48px; height: 38px; border-radius: 19px; background: #4a8cff; border: none;
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      box-shadow: 0 2px 8px rgba(74,140,255,0.35); transition: background 0.15s, box-shadow 0.15s;
+    }
+    .btn-send:hover { background: #3a7af0; box-shadow: 0 3px 12px rgba(74,140,255,0.45); }
+    .btn-send:active { background: #2b6bdf; }
+
+    /* Bubble edit */
+    .bubble-edit-container { display: none; width: 100%; }
+    .bubble-edit-box {
+      width: 100%; border: 2px solid #4a8cff; border-radius: 16px; padding: 12px 16px;
+      font-size: 15px; color: #111; outline: none; font-family: inherit;
+      line-height: 1.5; resize: none; background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,0.10);
+    }
+    .bubble-edit-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+    .btn-cancel {
+      background: #f0f0f0; border: none; border-radius: 20px; padding: 7px 18px;
+      font-size: 14px; cursor: pointer; color: #333;
+    }
+    .btn-cancel:hover { background: #e5e5e5; }
+    .btn-save {
+      background: #4a8cff; border: none; border-radius: 20px; padding: 7px 18px;
+      font-size: 14px; cursor: pointer; color: #fff; font-weight: 500;
+    }
+    .btn-save:hover { background: #3a7af0; }
+
+    /* Markdown */
+    .ai-text h1,.ai-text h2,.ai-text h3 { font-weight:700; margin-top:16px; margin-bottom:6px; color:#111; line-height:1.4; }
+    .ai-text h1{font-size:18px;}.ai-text h2{font-size:16px;}.ai-text h3{font-size:15px;}
+    .ai-text p { margin-bottom:10px; font-size:15px; color:#222; line-height:1.6; }
+    .ai-text ul,.ai-text ol { margin:8px 0 12px 20px; }
+    .ai-text ul{list-style:disc;}.ai-text ol{list-style:decimal;}
+    .ai-text li { font-size:15px; color:#222; line-height:1.6; margin-bottom:6px; }
+    .ai-text strong{font-weight:700;color:#111;}.ai-text em{font-style:italic;}
+    .ai-text a{color:#4a8cff;text-decoration:none;}.ai-text a:hover{text-decoration:underline;}
+    .ai-text hr{border:none;border-top:1px solid #eee;margin:14px 0;}
+    .ai-text code{background:#f4f4f4;border-radius:4px;padding:2px 5px;font-size:13px;font-family:monospace;}
+    .ai-text pre{background:#f4f4f4;border-radius:8px;padding:12px;overflow-x:auto;margin:10px 0;}
+    .ai-text pre code{background:none;padding:0;}
+    .ai-text table{width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;}
+    .ai-text th,.ai-text td{text-align:left;padding:8px 10px;border-bottom:1px solid #eee;color:#222;line-height:1.5;}
+    .ai-text th{font-weight:600;color:#555;font-size:13px;border-bottom:1px solid #ddd;}
+    .ai-text td code{background:#f0f0f0;border-radius:4px;padding:2px 6px;font-size:12px;font-family:monospace;}
+    .ai-text tr:last-child td{border-bottom:none;}
+
+    .btn-retry-disabled { opacity:0.35; cursor:not-allowed !important; pointer-events:none; }
+
+    /* Image preview */
+    .image-preview-strip { display:none; flex-wrap:wrap; gap:8px; padding-bottom:10px; }
+    .image-preview-strip.has-images { display:flex; }
+    .img-thumb { position:relative; width:64px; height:64px; border-radius:10px; overflow:hidden; flex-shrink:0; }
+    .img-thumb img { width:100%; height:100%; object-fit:cover; display:block; cursor:pointer; }
+    .img-thumb .remove-img {
+      position:absolute; top:2px; right:2px; width:18px; height:18px;
+      border-radius:50%; background:rgba(0,0,0,0.55); border:none;
+      display:flex; align-items:center; justify-content:center; cursor:pointer; padding:0;
+    }
+    .img-thumb .remove-img svg { display:block; }
+
+    /* Lightbox */
+    .img-lightbox {
+      display:none; position:fixed; inset:0; background:#000; z-index:1000;
+      align-items:center; justify-content:center; flex-direction:column;
+    }
+    .img-lightbox.open { display:flex; }
+    .img-lightbox img { width:100%; height:100%; object-fit:contain; display:block; }
+    .img-lightbox-close {
+      position:absolute; top:16px; right:16px; width:36px; height:36px;
+      border-radius:50%; background:rgba(255,255,255,0.15); border:none;
+      display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:1001;
+    }
+
+    /* Scroll buttons */
+    .scroll-btns {
+      position:fixed; right:14px; bottom:110px;
+      display:flex; flex-direction:column; gap:6px; z-index:20;
+    }
+    .scroll-btn {
+      width:36px; height:36px; border-radius:50%; background:#fff; border:none;
+      box-shadow:0 2px 8px rgba(0,0,0,0.15); display:flex; align-items:center;
+      justify-content:center; cursor:pointer; opacity:0; pointer-events:none;
+      transition:opacity 0.2s, transform 0.2s;
+    }
+    .scroll-btn.visible { opacity:1; pointer-events:auto; }
+    .scroll-btn:active { transform:scale(0.92); }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar overlay -->
+  <div class="sidebar-overlay" id="sidebar-overlay">
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-logo">Cleainput Ai</span>
+      </div>
+      <button class="sidebar-new-btn" id="sidebar-new-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="#222" stroke-width="1.8"/><line x1="12" y1="8" x2="12" y2="16" stroke="#222" stroke-width="2" stroke-linecap="round"/><line x1="8" y1="12" x2="16" y2="12" stroke="#222" stroke-width="2" stroke-linecap="round"/></svg>
+        New chat
+      </button>
+      <div class="sidebar-section-label">Recent</div>
+      <div class="sidebar-list" id="sidebar-list"></div>
+      <div class="sidebar-footer">
+        <div class="sidebar-avatar">O</div>
+        <span class="sidebar-username">OfficialMykeeE</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dropdown menu (shared, positioned dynamically) -->
+  <div class="item-dropdown" id="item-dropdown">
+    <button id="dd-rename">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="#333" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="#333" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Rename
+    </button>
+    <button id="dd-delete" class="danger">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="3 6 5 6 21 6" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11v6M14 11v6" stroke="#e53935" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      Delete
+    </button>
+  </div>
+
+  <!-- Rename modal -->
+  <div class="rename-modal-overlay" id="rename-modal-overlay">
+    <div class="rename-modal">
+      <h3>Rename chat</h3>
+      <input type="text" id="rename-input" placeholder="Chat name">
+      <div class="rename-modal-actions">
+        <button class="rename-cancel" id="rename-cancel">Cancel</button>
+        <button class="rename-save" id="rename-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="header">
+    <button class="btn-hamburger" id="hamburger-btn" aria-label="Menu">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <line x1="3" y1="6" x2="21" y2="6" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+        <line x1="3" y1="12" x2="21" y2="12" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+        <line x1="3" y1="18" x2="21" y2="18" stroke="#333" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <span style="position:absolute;left:50%;transform:translateX(-50%);font-size:16px;font-weight:600;color:#111;letter-spacing:-0.2px;">Cleainput Ai</span>
+    <button id="new-chat-btn" style="margin-left:auto;background:none;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;width:40px;height:40px;" aria-label="New Chat">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M22 12C22 17.5228 17.5228 22 12 22C10.4003 22 8.88837 21.6244 7.54753 20.9565C7.19121 20.7791 6.78393 20.72 6.39939 20.8229L4.17335 21.4185C3.20701 21.677 2.32295 20.793 2.58151 19.8267L3.17712 17.6006C3.28001 17.2161 3.22094 16.8088 3.04346 16.4525C2.37562 15.1116 2 13.5997 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12ZM12 7.25C12.4142 7.25 12.75 7.58579 12.75 8V16C12.75 16.4142 12.4142 16.75 12 16.75C11.5858 16.75 11.25 16.4142 11.25 16V8C11.25 7.58579 11.5858 7.25 12 7.25ZM8.75 10C8.75 9.58579 8.41421 9.25 8 9.25C7.58579 9.25 7.25 9.58579 7.25 10V14C7.25 14.4142 7.58579 14.75 8 14.75C8.41421 14.75 8.75 14.4142 8.75 14V10ZM16 9.25C16.4142 9.25 16.75 9.58579 16.75 10V14C16.75 14.4142 16.4142 14.75 16 14.75C15.5858 14.75 15.25 14.4142 15.25 14V10C15.25 9.58579 15.5858 9.25 16 9.25Z" fill="#4a8cff"></path></svg>
+    </button>
+  </header>
+
+  <!-- Scroll buttons -->
+  <div class="scroll-btns">
+    <button class="scroll-btn" id="scroll-top-btn" aria-label="Scroll to top">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 19V5M12 5L6 11M12 5L18 11" stroke="#555" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="scroll-btn" id="scroll-bottom-btn" aria-label="Scroll to bottom">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M12 19L6 13M12 19L18 13" stroke="#555" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+  <!-- Message area -->
+  <div class="message-area" id="message-area">
+    <div style="display:flex;flex-direction:column;align-items:flex-end;width:100%;">
+      <div class="message-bubble" id="user-bubble">how are you,</div>
+      <div class="message-actions">
+        <button aria-label="Copy" id="bubble-copy-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 11C6 8.17157 6 6.75736 6.87868 5.87868C7.75736 5 9.17157 5 12 5H15C17.8284 5 19.2426 5 20.1213 5.87868C21 6.75736 21 8.17157 21 11V16C21 18.8284 21 20.2426 20.1213 21.1213C19.2426 22 17.8284 22 15 22H12C9.17157 22 7.75736 22 6.87868 21.1213C6 20.2426 6 18.8284 6 16V11Z" stroke="#aaa" stroke-width="1.5"/><path d="M6 19C4.34315 19 3 17.6569 3 16V10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H15C16.6569 2 18 3.34315 18 5" stroke="#aaa" stroke-width="1.5"/></svg>
+        </button>
+        <button aria-label="Edit" id="bubble-edit-btn">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path fill="#aaa" fill-rule="evenodd" d="M15.198 3.52a1.612 1.612 0 012.223 2.336L6.346 16.421l-2.854.375 1.17-3.272L15.197 3.521zm3.725-1.322a3.612 3.612 0 00-5.102-.128L3.11 12.238a1 1 0 00-.253.388l-1.8 5.037a1 1 0 001.072 1.328l4.8-.63a1 1 0 00.56-.267L18.8 7.304a3.612 3.612 0 00.122-5.106zM12 17a1 1 0 100 2h6a1 1 0 100-2h-6z"/></svg>
+        </button>
+        <!-- Version counter: hidden until first edit -->
+        <div class="version-counter" id="version-counter" style="display:none">
+          <button class="v-nav" id="v-prev" aria-label="Previous version" disabled>&#8249;</button>
+          <span class="v-label" id="v-label">2 / 2</span>
+          <button class="v-nav" id="v-next" aria-label="Next version" disabled>&#8250;</button>
+        </div>
+      </div>
+      <div class="bubble-edit-container" id="bubble-edit-container">
+        <textarea class="bubble-edit-box" id="bubble-edit-textarea" rows="2">how are you,</textarea>
+        <div class="bubble-edit-actions">
+          <button class="btn-cancel" id="bubble-cancel-btn">Cancel</button>
+          <button class="btn-save" id="bubble-save-btn">Send</button>
+        </div>
+      </div>
+      <div class="ai-response">
+        <div class="ai-label" id="ai-label">Cleainput is Reading...</div>
+        <div class="ai-text" id="ai-text" style="display:none" data-raw="I'm doing great, thank you for asking! What can I do for you today?">I'm doing great, thank you for asking! What can I do for you today?</div>
+        <div class="ai-actions">
+          <button aria-label="Retry" id="retry-btn" class="btn-retry-disabled">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M1 4v6h6" stroke="#aaa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.51 15a9 9 0 1 0 .49-4.95L1 10" stroke="#aaa" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button aria-label="Like" id="like-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8.9929,5.16326 C9.16197,6.58609 8.93059,8.06959 8.41676,9.40186 C7.84825,10.8757 7.09175,12.4711 6.99818,14.0588 C6.91939,15.3959 7.22235,16.9777 8.03031,18.0606 C8.9152,19.2465 10.3675,20 11.9667,20 L13.4792,20 C16.0797,20 18.246,18.0067 18.462,15.4152 L18.823,11.083 C18.8716,10.5 18.4115,10 17.8264,10 L12.5,10 C11.6689,10 11.0047,9.32743 10.9985,8.50755 C10.9913,7.53778 11.0524,6.34084 10.6056,5.44721 C10.206,4.64792 9.83199,4.5 9.50003,4.5 C9.20032,4.5 8.9608,4.89307 8.9929,5.16326 Z M9.50003,2.5 C10.8556,2.5 11.7941,3.35208 12.3945,4.55279 C12.9168,5.59751 12.9661,6.85257 12.9915,8 L17.8264,8 C19.5815,8 20.9618,9.50008 20.8161,11.2491 L20.455,15.5813 C20.1527,19.2094 17.1199,22 13.4792,22 L11.9667,22 C9.99963,22 8.17139,21.1817 6.89975,19.8215 C6.45237,19.9382 5.98314,20.0001 5.5,20.0001 C4.39178,20.0001 3.47158,19.3791 2.87596,18.3917 C2.2969,17.4317 2,16.1066 2,14.5001 C2,12.8937 2.2969,11.5685 2.87596,10.6086 C3.47158,9.62116 4.39178,9.00012 5.5,9.00012 C5.78149,9.00012 6.07864,9.04963 6.37732,9.13358 C6.83483,7.93439 7.16111,6.69732 7.00687,5.39924 C6.83517,3.95421 8.01551,2.5 9.50003,2.5 Z M5.69583,11.0244 C5.21131,10.9241 4.83096,11.2397 4.5885,11.6416 C4.26275,12.1816 4,13.1064 4,14.5001 C4,15.8938 4.26275,16.8186 4.5885,17.3586 C4.89771,17.8712 5.22751,18.0001 5.5,18.0001 C5.56358,18.0001 5.62668,17.9985 5.68929,17.9952 C5.15387,16.7868 4.92419,15.2555 5.00164,13.9412 C5.04911,13.1357 5.36336,12.0232 5.69583,11.0244 Z" fill="#aaa"/></svg>
+          </button>
+          <button aria-label="Dislike" id="dislike-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8.9929,18.8367 C9.16197,17.4139 8.93059,15.9304 8.41676,14.5981 C7.84825,13.1243 7.09175,11.5289 6.99818,9.94117 C6.91939,8.6041 7.22235,7.02225 8.03031,5.93942 C8.9152,4.75349 10.3675,4 11.9667,4 L13.4792,4 C16.0797,4 18.246,5.99331 18.462,8.58477 L18.823,12.917 C18.8716,13.5 18.4115,14 17.8264,14 L12.5,14 C11.6689,14 11.0047,14.6726 10.9985,15.4925 C10.9913,16.4622 11.0524,17.6592 10.6056,18.5528 C10.206,19.3521 9.83199,19.5 9.50003,19.5 C9.20032,19.5 8.9608,19.1069 8.9929,18.8367 Z M9.50003,21.5 C10.8556,21.5 11.7941,20.6479 12.3945,19.4472 C12.9168,18.4025 12.9661,17.1474 12.9915,16 L17.8264,16 C19.5815,16 20.9618,14.4999 20.8161,12.7509 L20.455,8.41868 C20.1527,4.79063 17.1199,2 13.4792,2 L11.9667,2 C9.99963,2 8.17139,2.81832 6.89975,4.17854 C6.45237,4.06181 5.98314,3.99988 5.5,3.99988 C4.39178,3.99988 3.47158,4.62092 2.87596,5.60831 C2.2969,6.56825 2,7.89344 2,9.49988 C2,11.1063 2.2969,12.4315 2.87596,13.3914 C3.47158,14.3788 4.39178,14.9999 5.5,14.9999 C5.78149,14.9999 6.07864,14.9504 6.37732,14.8664 C6.83483,16.0656 7.16111,17.3027 7.00687,18.6008 C6.83517,20.0458 8.01551,21.5 9.50003,21.5 Z M5.69583,12.9756 C5.21131,13.0759 4.83096,12.7603 4.5885,12.3584 C4.26275,11.8184 4,10.8936 4,9.49988 C4,8.10619 4.26275,7.18138 4.5885,6.64136 C4.89771,6.12878 5.22751,5.99988 5.5,5.99988 C5.56358,5.99988 5.62668,6.00154 5.68929,6.00482 C5.15387,7.21322 4.92419,8.74453 5.00164,10.0588 C5.04911,10.8643 5.36336,11.9768 5.69583,12.9756 Z" fill="#aaa"/></svg>
+          </button>
+          <button aria-label="Copy" id="ai-copy-btn">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 11C6 8.17157 6 6.75736 6.87868 5.87868C7.75736 5 9.17157 5 12 5H15C17.8284 5 19.2426 5 20.1213 5.87868C21 6.75736 21 8.17157 21 11V16C21 18.8284 21 20.2426 20.1213 21.1213C19.2426 22 17.8284 22 15 22H12C9.17157 22 7.75736 22 6.87868 21.1213C6 20.2426 6 18.8284 6 16V11Z" stroke="#aaa" stroke-width="1.5"/><path d="M6 19C4.34315 19 3 17.6569 3 16V10C3 6.22876 3 4.34315 4.17157 3.17157C5.34315 2 7.22876 2 11 2H15C16.6569 2 18 3.34315 18 5" stroke="#aaa" stroke-width="1.5"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-bar-wrapper">
+    <input type="file" id="img-file-input" accept="image/*" multiple style="display:none">
+    <div class="input-pill">
+      <div style="display:flex;flex-direction:column;flex:1;gap:0;">
+        <div class="image-preview-strip" id="image-preview-strip"></div>
+        <div contenteditable="true" id="editor" data-placeholder="Ask Cleainput anything" autofocus></div>
+      </div>
+    </div>
+    <div class="toolbar">
+      <button class="chip">
+        <svg fill="#4a8cff" width="17" height="17" viewBox="0 0 28.621 28.621"><g><path d="M14.311,0c-6.904,0-12.5,5.596-12.5,12.5c0,4.723,2.618,8.828,6.48,10.955l-0.147,5.166l5.898-3.635C14.131,24.988,14.22,25,14.311,25c6.904,0,12.5-5.596,12.5-12.5C26.811,5.596,21.215,0,14.311,0z M13.75,20.018c-1.116,0-1.876-0.822-1.876-1.918c0-1.119,0.779-1.92,1.876-1.92c1.14,0,1.878,0.801,1.898,1.92C15.649,19.193,14.891,20.018,13.75,20.018z M16.301,12.173c-0.779,0.865-1.096,1.686-1.074,2.638v0.377h-2.805L12.4,14.641c-0.063-1.074,0.295-2.173,1.246-3.31c0.673-0.803,1.223-1.477,1.223-2.194c0-0.737-0.487-1.222-1.542-1.263c-0.693,0-1.539,0.251-2.084,0.632l-0.718-2.301c0.759-0.442,2.022-0.861,3.52-0.861c2.785,0,4.048,1.538,4.048,3.289C18.094,10.233,17.104,11.287,16.301,12.173z"/></g></svg>
+        Atlas
+      </button>
+      <button class="chip">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9" stroke="#4a8cff" stroke-width="1.8"/>
+          <ellipse cx="12" cy="12" rx="3.5" ry="9" stroke="#4a8cff" stroke-width="1.8"/>
+          <line x1="3" y1="9" x2="21" y2="9" stroke="#4a8cff" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="3" y1="15" x2="21" y2="15" stroke="#4a8cff" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+        Search
+      </button>
+      <div class="spacer"></div>
+      <button class="btn-plus" aria-label="Attach">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><line x1="12" y1="5" x2="12" y2="19" stroke="#555" stroke-width="2" stroke-linecap="round"/><line x1="5" y1="12" x2="19" y2="12" stroke="#555" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <button class="btn-send" aria-label="Send">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 20V4M12 4L6 10M12 4L18 10" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div class="img-lightbox" id="img-lightbox">
+    <button class="img-lightbox-close" id="img-lightbox-close" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 12 12" fill="none"><line x1="1" y1="1" x2="11" y2="11" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="1" x2="1" y2="11" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <img id="img-lightbox-img" src="" alt="preview">
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <script>
+    // ══════════════════════════════
+    // VERSION COUNTER STATE
+    // ══════════════════════════════
+    // Hidden until first edit; starts at 1/1 on first save
+    var messageVersions = ['how are you,'];
+    var currentVersionIndex = 0; // 0-based
+
+    function updateVersionCounter() {
+      var counter = document.getElementById('version-counter');
+      var total = messageVersions.length;
+      var current = currentVersionIndex + 1;
+      var label = document.getElementById('v-label');
+      var prevBtn = document.getElementById('v-prev');
+      var nextBtn = document.getElementById('v-next');
+
+      // Only show counter once there are multiple versions
+      if (total < 2) {
+        counter.style.display = 'none';
+        return;
+      }
+      counter.style.display = 'flex';
+      label.textContent = current + ' / ' + total;
+      prevBtn.disabled = currentVersionIndex === 0;
+      nextBtn.disabled = currentVersionIndex === total - 1;
+    }
+
+    document.getElementById('v-prev').addEventListener('click', function() {
+      if (currentVersionIndex > 0) {
+        currentVersionIndex--;
+        document.getElementById('user-bubble').textContent = messageVersions[currentVersionIndex];
+        updateVersionCounter();
+      }
+    });
+
+    document.getElementById('v-next').addEventListener('click', function() {
+      if (currentVersionIndex < messageVersions.length - 1) {
+        currentVersionIndex++;
+        document.getElementById('user-bubble').textContent = messageVersions[currentVersionIndex];
+        updateVersionCounter();
+      }
+    });
+
+    // Counter hidden on init; appears after first edit
+
+    // ══════════════════════════════
+    // CHAT HISTORY (localStorage)
+    // ══════════════════════════════
+    function getChats() {
+      try { return JSON.parse(localStorage.getItem('cleainput_chats') || '[]'); } catch(e){ return []; }
+    }
+    function saveChats(chats) {
+      localStorage.setItem('cleainput_chats', JSON.stringify(chats));
+    }
+    function getCurrentId() {
+      return localStorage.getItem('cleainput_current') || null;
+    }
+    function setCurrentId(id) {
+      localStorage.setItem('cleainput_current', id);
+    }
+
+    if (getChats().length === 0) {
+      var seed = [{ id: 'seed1', title: 'how are you,', ts: Date.now() }];
+      saveChats(seed);
+      setCurrentId('seed1');
+    }
+
+    // ══════════════════════════════
+    // SIDEBAR
+    // ══════════════════════════════
+    var sidebarOverlay = document.getElementById('sidebar-overlay');
+    var sidebarBackdrop = document.getElementById('sidebar-backdrop');
+    var hamburgerBtn = document.getElementById('hamburger-btn');
+    var sidebarList = document.getElementById('sidebar-list');
+    var dropdown = document.getElementById('item-dropdown');
+    var ddRename = document.getElementById('dd-rename');
+    var ddDelete = document.getElementById('dd-delete');
+    var renameModal = document.getElementById('rename-modal-overlay');
+    var renameInput = document.getElementById('rename-input');
+    var activeDropdownId = null;
+
+    function openSidebar() { sidebarOverlay.classList.add('open'); renderSidebar(); }
+    function closeSidebar() { sidebarOverlay.classList.remove('open'); closeDropdown(); }
+
+    hamburgerBtn.addEventListener('click', openSidebar);
+    sidebarBackdrop.addEventListener('click', closeSidebar);
+
+    function renderSidebar() {
+      var chats = getChats();
+      var currentId = getCurrentId();
+      sidebarList.innerHTML = '';
+      chats.forEach(function(chat) {
+        var item = document.createElement('div');
+        item.className = 'sidebar-item' + (chat.id === currentId ? ' active' : '');
+        item.innerHTML =
+          '<span class="sidebar-item-text">' + escapeHtml(chat.title) + '</span>' +
+          '<button class="sidebar-item-menu" data-id="' + chat.id + '" aria-label="More">'+
+            '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="12" r="1.5" fill="#aaa"/><circle cx="12" cy="12" r="1.5" fill="#aaa"/><circle cx="19" cy="12" r="1.5" fill="#aaa"/></svg>'+
+          '</button>';
+
+        item.addEventListener('click', function(e) {
+          if (e.target.closest('.sidebar-item-menu')) return;
+          setCurrentId(chat.id);
+          updateBubbleFromChat(chat);
+          closeSidebar();
+        });
+
+        item.querySelector('.sidebar-item-menu').addEventListener('click', function(e) {
+          e.stopPropagation();
+          openDropdown(chat.id, this);
+        });
+
+        sidebarList.appendChild(item);
+      });
+    }
+
+    function updateBubbleFromChat(chat) {
+      var bubble = document.getElementById('user-bubble');
+      bubble.textContent = chat.title;
+    }
+
+    function escapeHtml(t) {
+      return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function openDropdown(id, btn) {
+      closeDropdown();
+      activeDropdownId = id;
+      var rect = btn.getBoundingClientRect();
+      dropdown.style.top = (rect.bottom + 4) + 'px';
+      dropdown.style.left = Math.min(rect.left, window.innerWidth - 180) + 'px';
+      dropdown.classList.add('open');
+    }
+    function closeDropdown() {
+      dropdown.classList.remove('open');
+      activeDropdownId = null;
+    }
+    document.addEventListener('click', function(e) {
+      if (!dropdown.contains(e.target)) closeDropdown();
+    });
+
+    ddRename.addEventListener('click', function() {
+      if (!activeDropdownId) return;
+      var chats = getChats();
+      var chat = chats.find(function(c){ return c.id === activeDropdownId; });
+      if (!chat) return;
+      renameInput.value = chat.title;
+      renameModal.classList.add('open');
+      closeDropdown();
+      closeSidebar();
+      setTimeout(function(){ renameInput.focus(); renameInput.select(); }, 100);
+    });
+
+    ddDelete.addEventListener('click', function() {
+      if (!activeDropdownId) return;
+      var chats = getChats().filter(function(c){ return c.id !== activeDropdownId; });
+      saveChats(chats);
+      if (getCurrentId() === activeDropdownId) {
+        setCurrentId(chats.length ? chats[0].id : null);
+      }
+      closeDropdown();
+      renderSidebar();
+    });
+
+    document.getElementById('rename-cancel').addEventListener('click', function() {
+      renameModal.classList.remove('open');
+    });
+    document.getElementById('rename-save').addEventListener('click', function() {
+      var newName = renameInput.value.trim();
+      if (!newName) return;
+      var chats = getChats();
+      chats.forEach(function(c) {
+        if (c.id === (activeDropdownId || getCurrentId())) c.title = newName;
+      });
+      saveChats(chats);
+      renameModal.classList.remove('open');
+      var cur = chats.find(function(c){ return c.id === getCurrentId(); });
+      if (cur) document.getElementById('user-bubble').textContent = cur.title;
+    });
+
+    document.getElementById('sidebar-new-btn').addEventListener('click', function() {
+      startNewChat();
+      closeSidebar();
+    });
+
+    function startNewChat() {
+      var id = 'chat_' + Date.now();
+      var chats = getChats();
+      chats.unshift({ id: id, title: 'New chat', ts: Date.now() });
+      saveChats(chats);
+      setCurrentId(id);
+      clearChatUI();
+    }
+
+    function clearChatUI() {
+      var msgArea = document.getElementById('message-area');
+      msgArea.innerHTML = '';
+      var editor = document.getElementById('editor');
+      editor.innerHTML = '';
+      localStorage.removeItem('cleainput_draft');
+      var strip = document.getElementById('image-preview-strip');
+      strip.innerHTML = '';
+      strip.classList.remove('has-images');
+      updateScrollBtns();
+    }
+
+    function saveBubbleTitleToCurrentChat(title) {
+      var chats = getChats();
+      var id = getCurrentId();
+      var found = false;
+      chats.forEach(function(c) {
+        if (c.id === id) { c.title = title; found = true; }
+      });
+      if (!found && id) chats.unshift({ id: id, title: title, ts: Date.now() });
+      saveChats(chats);
+    }
+
+    document.getElementById('new-chat-btn').addEventListener('click', function() {
+      startNewChat();
+    });
+
+    // ══════════════════════════════
+    // MARKDOWN
+    // ══════════════════════════════
+    marked.setOptions({ gfm: true, breaks: true });
+
+    function isResearchResponse(text) {
+      var s = 0;
+      if (/#{1,3}\s/.test(text)) s += 3;
+      if (/\*\*[^*]+\*\*/.test(text)) s += 2;
+      if (/^\s*[-*]\s/m.test(text)) s += 2;
+      if (/^\s*\d+\.\s/m.test(text)) s += 2;
+      if (/\|.+\|/.test(text)) s += 3;
+      if (text.split('\n').length > 6) s += 1;
+      if (text.length > 300) s += 1;
+      return s >= 3;
+    }
+
+    function renderAIResponse(text) {
+      var el = document.getElementById('ai-text');
+      if (isResearchResponse(text)) {
+        el.innerHTML = marked.parse(text);
+      } else {
+        el.textContent = text;
+      }
+    }
+
+    // ══════════════════════════════
+    // THINKING ANIMATION
+    // ══════════════════════════════
+    var label = document.getElementById('ai-label');
+    var aiText = document.getElementById('ai-text');
+    var aiActions = document.querySelector('.ai-actions');
+
+    function setLabel(icon, text, withDots) {
+      withDots = withDots !== false;
+      var dots = withDots ? '<span class="dot-wave"><span></span><span></span><span></span></span>' : '';
+      var iconHtml = icon ? '<span class="state-icon">' + icon + '</span>' : '';
+      label.innerHTML = iconHtml + '<span>' + text + '</span>' + dots;
+      label.className = 'ai-label' + (withDots ? ' active' : '');
+    }
+
+    function showExecuted() {
+      label.innerHTML = 'Executed';
+      label.className = 'ai-label';
+      setTimeout(function() {
+        var rawText = aiText.dataset.raw || aiText.textContent;
+        renderAIResponse(rawText);
+        aiText.style.display = '';
+        aiText.classList.add('visible');
+        aiActions.style.display = 'flex';
+        setTimeout(function() { aiActions.classList.add('visible'); }, 100);
+      }, 300);
+    }
+
+    aiText.style.display = 'none';
+    aiActions.style.display = 'none';
+
+    setLabel('', 'Cleainput is Reading');
+    setTimeout(function() {
+      setLabel('', 'Cleainput is Understanding');
+      setTimeout(showExecuted, 1400);
+    }, 1400);
+
+    // ══════════════════════════════
+    // BUBBLE EDIT — with version tracking
+    // ══════════════════════════════
+    var bubble = document.getElementById('user-bubble');
+    var editBtn = document.getElementById('bubble-edit-btn');
+    var editContainer = document.getElementById('bubble-edit-container');
+    var editTextarea = document.getElementById('bubble-edit-textarea');
+    var cancelBtn = document.getElementById('bubble-cancel-btn');
+    var saveBtn = document.getElementById('bubble-save-btn');
+
+    editBtn.addEventListener('click', function() {
+      editTextarea.value = bubble.textContent;
+      bubble.style.display = 'none';
+      document.querySelector('.message-actions').style.display = 'none';
+      editContainer.style.display = 'block';
+      editTextarea.focus();
+    });
+
+    cancelBtn.addEventListener('click', function() {
+      editContainer.style.display = 'none';
+      bubble.style.display = '';
+      document.querySelector('.message-actions').style.display = '';
+    });
+
+    saveBtn.addEventListener('click', function() {
+      var newText = editTextarea.value.trim();
+      if (newText) {
+        // Add new version and jump to it
+        messageVersions.push(newText);
+        currentVersionIndex = messageVersions.length - 1;
+        bubble.textContent = newText;
+        updateVersionCounter();
+        saveBubbleTitleToCurrentChat(newText);
+      }
+      editContainer.style.display = 'none';
+      bubble.style.display = '';
+      document.querySelector('.message-actions').style.display = '';
+
+      // Trigger AI reply
+      aiText.style.display = 'none';
+      aiText.classList.remove('visible');
+      aiActions.style.display = 'none';
+      aiActions.classList.remove('visible');
+
+      setLabel('', 'Cleainput is Reading');
+      setTimeout(function() {
+        setLabel('', 'Cleainput is Understanding');
+        setTimeout(function() {
+          aiText.dataset.raw = 'This is just testing';
+          label.innerHTML = 'Executed';
+          label.className = 'ai-label';
+          setTimeout(function() {
+            renderAIResponse('This is just testing');
+            aiText.style.display = '';
+            aiText.classList.add('visible');
+            aiActions.style.display = 'flex';
+            setTimeout(function() { aiActions.classList.add('visible'); }, 100);
+          }, 300);
+        }, 1400);
+      }, 1400);
+    });
+
+    // ══════════════════════════════
+    // COPY BUTTONS
+    // ══════════════════════════════
+    document.getElementById('bubble-copy-btn').addEventListener('click', function() {
+      navigator.clipboard.writeText(bubble.textContent).catch(function(){});
+      this.style.opacity = '0.4';
+      var b = this; setTimeout(function(){ b.style.opacity = ''; }, 800);
+    });
+    document.getElementById('ai-copy-btn').addEventListener('click', function() {
+      navigator.clipboard.writeText(document.getElementById('ai-text').textContent).catch(function(){});
+      this.style.opacity = '0.4';
+      var b = this; setTimeout(function(){ b.style.opacity = ''; }, 800);
+    });
+
+    // ══════════════════════════════
+    // LIKE / DISLIKE
+    // ══════════════════════════════
+    document.getElementById('like-btn').addEventListener('click', function() {
+      var active = this.dataset.active === '1';
+      this.dataset.active = active ? '0' : '1';
+      this.querySelector('path').setAttribute('fill', active ? '#aaa' : '#4a8cff');
+      var db = document.getElementById('dislike-btn');
+      db.dataset.active = '0'; db.querySelector('path').setAttribute('fill', '#aaa');
+    });
+    document.getElementById('dislike-btn').addEventListener('click', function() {
+      var active = this.dataset.active === '1';
+      this.dataset.active = active ? '0' : '1';
+      this.querySelector('path').setAttribute('fill', active ? '#aaa' : '#ff4a4a');
+      var lb = document.getElementById('like-btn');
+      lb.dataset.active = '0'; lb.querySelector('path').setAttribute('fill', '#aaa');
+    });
+
+    // ══════════════════════════════
+    // EDITOR — persist draft
+    // ══════════════════════════════
+    var editor = document.getElementById('editor');
+
+    var draft = localStorage.getItem('cleainput_draft');
+    if (draft) editor.innerText = draft;
+
+    editor.addEventListener('input', function() {
+      if (editor.innerHTML === '<br>' || editor.innerHTML === '') editor.innerHTML = '';
+      localStorage.setItem('cleainput_draft', editor.innerText);
+    });
+    editor.addEventListener('blur', function() {
+      if (editor.innerText.trim() === '') editor.innerHTML = '';
+    });
+
+    // ══════════════════════════════
+    // IMAGE UPLOAD & LIGHTBOX
+    // ══════════════════════════════
+    var fileInput = document.getElementById('img-file-input');
+    var previewStrip = document.getElementById('image-preview-strip');
+    var lightbox = document.getElementById('img-lightbox');
+    var lightboxImg = document.getElementById('img-lightbox-img');
+
+    document.querySelector('.btn-plus').addEventListener('click', function() {
+      fileInput.value = ''; fileInput.click();
+    });
+
+    fileInput.addEventListener('change', function() {
+      Array.from(fileInput.files).forEach(function(file) {
+        if (!file.type.startsWith('image/')) return;
+        var reader = new FileReader();
+        reader.onload = function(e) { addImageThumb(e.target.result); };
+        reader.readAsDataURL(file);
+      });
+    });
+
+    function addImageThumb(src) {
+      var thumb = document.createElement('div');
+      thumb.className = 'img-thumb';
+      thumb.innerHTML =
+        '<img src="' + src + '" alt="upload">' +
+        '<button class="remove-img" aria-label="Remove"><svg width="10" height="10" viewBox="0 0 12 12" fill="none"><line x1="1" y1="1" x2="11" y2="11" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="1" x2="1" y2="11" stroke="white" stroke-width="2" stroke-linecap="round"/></svg></button>';
+      thumb.querySelector('img').addEventListener('click', function() {
+        lightboxImg.src = src;
+        lightbox.classList.add('open');
+      });
+      thumb.querySelector('.remove-img').addEventListener('click', function() {
+        thumb.remove();
+        if (previewStrip.children.length === 0) previewStrip.classList.remove('has-images');
+      });
+      previewStrip.appendChild(thumb);
+      previewStrip.classList.add('has-images');
+    }
+
+    document.getElementById('img-lightbox-close').addEventListener('click', function() {
+      lightbox.classList.remove('open');
+    });
+    lightbox.addEventListener('click', function(e) {
+      if (e.target === lightbox) lightbox.classList.remove('open');
+    });
+
+    // ══════════════════════════════
+    // SCROLL BUTTONS
+    // ══════════════════════════════
+    var msgArea = document.getElementById('message-area');
+
+    function updateScrollBtns() {
+      var st = msgArea.scrollTop;
+      var max = msgArea.scrollHeight - msgArea.clientHeight;
+      document.getElementById('scroll-top-btn').classList.toggle('visible', st > 60);
+      document.getElementById('scroll-bottom-btn').classList.toggle('visible', max - st > 60);
+    }
+
+    msgArea.addEventListener('scroll', updateScrollBtns);
+    updateScrollBtns();
+
+    document.getElementById('scroll-top-btn').addEventListener('click', function() {
+      msgArea.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+    document.getElementById('scroll-bottom-btn').addEventListener('click', function() {
+      msgArea.scrollTo({ top: msgArea.scrollHeight, behavior: 'smooth' });
+    });
+  </script>
+</body>
+</html>
+
