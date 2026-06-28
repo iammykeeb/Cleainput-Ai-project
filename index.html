@@ -594,9 +594,23 @@
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ message: message })
   })
-    .then(function(res) { return res.json(); })
-    .then(function(data) { return formatBackendResult(data); })
-    .catch(function() { return "Something went wrong on my end — please try again."; });
+    .then(async function(res) {
+      const text = await res.text(); // read raw body
+      console.log("Status:", res.status);
+      console.log("Response text:", text);
+      // Try to parse JSON if possible
+      try {
+        const data = JSON.parse(text);
+        return formatBackendResult(data);
+      } catch(e) {
+        console.error("Failed to parse JSON:", text);
+        return "Error: " + text;
+      }
+    })
+    .catch(function(error) {
+      console.error("Fetch error:", error);
+      return "Something went wrong on my end — please try again.";
+    });
 }
     
     function triggerAIReply(responseContainer, userText) {
