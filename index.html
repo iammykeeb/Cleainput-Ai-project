@@ -589,16 +589,16 @@
     }
 
     function fetchCleainputReply(message) {
-      return fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: message })
-      })
-        .then(function(res) { return res.json(); })
-        .then(function(data) { return formatBackendResult(data); })
-        .catch(function() { return "Something went wrong on my end — please try again."; });
-    }
-
+  return fetch("https://iammichkee-task-assistant-backend.hf.space/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: message })
+  })
+    .then(function(res) { return res.json(); })
+    .then(function(data) { return formatBackendResult(data); })
+    .catch(function() { return "Something went wrong on my end — please try again."; });
+}
+    
     function triggerAIReply(responseContainer, userText) {
       var aiLabel = responseContainer.querySelector('.ai-label');
       var aiTextEl = responseContainer.querySelector('.ai-text');
