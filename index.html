@@ -272,6 +272,7 @@
       padding: 70px 16px 180px 16px;
       display: flex; flex-direction: column; align-items: flex-end;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .message-bubble {
@@ -429,17 +430,35 @@
     }
 
     .scroll-btns {
-      position:fixed; right:14px; bottom:110px;
-      display:flex; flex-direction:column; gap:6px; z-index:20;
+      position: fixed;
+      right: 14px;
+      bottom: 170px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 20;
+      pointer-events: none;
     }
     .scroll-btn {
-      width:36px; height:36px; border-radius:50%; background:#fff; border:none;
-      box-shadow:0 2px 8px rgba(0,0,0,0.15); display:flex; align-items:center;
-      justify-content:center; cursor:pointer; opacity:0; pointer-events:none;
-      transition:opacity 0.2s, transform 0.2s;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #fff;
+      border: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s, transform 0.2s;
     }
-    .scroll-btn.visible { opacity:1; pointer-events:auto; }
-    .scroll-btn:active { transform:scale(0.92); }
+    .scroll-btn.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .scroll-btn:active { transform: scale(0.92); }
   </style>
 </head>
 <body>
@@ -556,6 +575,14 @@
     var msgArea = document.getElementById('message-area');
     var aiAnswering = false;
 
+    function scrollToBottom() {
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          msgArea.scrollTop = msgArea.scrollHeight;
+        });
+      });
+    }
+
     function updateSendBtn() {
       var hasText = editor.innerText.trim().length > 0;
       var active = hasText || aiAnswering;
@@ -572,57 +599,55 @@
     }
 
     function formatBackendResult(data) {
-  if (data.type === "chat") {
-    var out = data.reply || "";
-    if (data.sources && data.sources.length) {
-      out += "\n\n**Sources:**\n";
-      data.sources.forEach(function(s) {
-        out += "- [" + s.title + "](" + s.url + ")\n";
-      });
+      if (data.type === "chat") {
+        var out = data.reply || "";
+        if (data.sources && data.sources.length) {
+          out += "\n\n**Sources:**\n";
+          data.sources.forEach(function(s) {
+            out += "- [" + s.title + "](" + s.url + ")\n";
+          });
+        }
+        return out;
+      } else if (data.type === "classification") {
+        return "(detected as: " + data.intent + (data.pattern ? ", pattern: " + data.pattern : "") + ")";
+      } else {
+        var errMsg = data.error;
+        if (errMsg && typeof errMsg === "object") {
+          errMsg = JSON.stringify(errMsg);
+        }
+        return "Error: " + (errMsg || JSON.stringify(data));
+      }
     }
-    return out;
-  } else if (data.type === "classification") {
-    return "(detected as: " + data.intent + (data.pattern ? ", pattern: " + data.pattern : "") + ")";
-  } else {
-    var errMsg = data.error;
-    if (errMsg && typeof errMsg === "object") {
-      errMsg = JSON.stringify(errMsg);
-    }
-    return "Error: " + (errMsg || JSON.stringify(data));
-  }
-}
 
     function fetchCleainputReply(message) {
-  return fetch("/api/chat", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: message })
-  })
-    .then(async function(res) {
-      const text = await res.text(); // read raw body
-      console.log("Status:", res.status);
-      console.log("Response text:", text);
-      // Try to parse JSON if possible
-      try {
-        const data = JSON.parse(text);
-        return formatBackendResult(data);
-      } catch(e) {
-        console.error("Failed to parse JSON:", text);
-        return "Error: " + text;
-      }
-    })
-    .catch(function(error) {
-      console.error("Fetch error:", error);
-      return "Something went wrong on my end — please try again.";
-    });
-}
-    
+      return fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: message })
+      })
+        .then(async function(res) {
+          const text = await res.text();
+          console.log("Status:", res.status);
+          console.log("Response text:", text);
+          try {
+            const data = JSON.parse(text);
+            return formatBackendResult(data);
+          } catch(e) {
+            console.error("Failed to parse JSON:", text);
+            return "Error: " + text;
+          }
+        })
+        .catch(function(error) {
+          console.error("Fetch error:", error);
+          return "Something went wrong on my end — please try again.";
+        });
+    }
+
     function triggerAIReply(responseContainer, userText) {
       var aiLabel = responseContainer.querySelector('.ai-label');
       var aiTextEl = responseContainer.querySelector('.ai-text');
       var aiActionsEl = responseContainer.querySelector('.ai-actions');
 
-      // Reset for re-trigger (edit case)
       aiTextEl.style.display = 'none';
       aiTextEl.classList.remove('visible');
       aiTextEl.innerHTML = '';
@@ -642,9 +667,11 @@
       }
 
       setLabelIn('Cleainput is Reading', true);
+      scrollToBottom();
 
       var understandingTimer = setTimeout(function() {
         setLabelIn('Cleainput is Understanding', true);
+        scrollToBottom();
       }, 1400);
 
       var minDelay = new Promise(function(resolve) {
@@ -664,10 +691,11 @@
           aiTextEl.style.display = '';
           aiTextEl.classList.add('visible');
           aiActionsEl.style.display = 'flex';
+          scrollToBottom();
           setTimeout(function() {
             aiActionsEl.classList.add('visible');
-            msgArea.scrollTo({ top: msgArea.scrollHeight, behavior: 'smooth' });
-          }, 100);
+            scrollToBottom();
+          }, 150);
         }, 300);
       });
     }
@@ -778,7 +806,7 @@
         bubble.style.display = '';
         msgActions.style.display = 'flex';
         triggerAIReply(aiResponse, newText);
-        msgArea.scrollTo({ top: msgArea.scrollHeight, behavior: 'smooth' });
+        scrollToBottom();
       });
 
       wrap.querySelector('.msg-copy-btn').addEventListener('click', function() {
@@ -803,7 +831,7 @@
 
       var block = createMessageBlock(text);
       msgArea.appendChild(block);
-      msgArea.scrollTo({ top: msgArea.scrollHeight, behavior: 'smooth' });
+      scrollToBottom();
 
       editor.innerHTML = '';
       localStorage.removeItem('cleainput_draft');
@@ -947,8 +975,8 @@
     function updateScrollBtns() {
       var st = msgArea.scrollTop;
       var max = msgArea.scrollHeight - msgArea.clientHeight;
-      document.getElementById('scroll-top-btn').classList.toggle('visible', st > 60);
-      document.getElementById('scroll-bottom-btn').classList.toggle('visible', max - st > 60);
+      document.getElementById('scroll-top-btn').classList.toggle('visible', st > 100);
+      document.getElementById('scroll-bottom-btn').classList.toggle('visible', max - st > 100);
     }
 
     msgArea.addEventListener('scroll', updateScrollBtns);
